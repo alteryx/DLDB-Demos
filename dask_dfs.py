@@ -84,7 +84,7 @@ labels = pd.read_csv("label_times_full_data.csv", index_col=["user_id"])["label"
 es = utils.load_entityset('partitioned_data/part_0/')
 fl = ft.load_features('fl.p', es)
 
-
+print("loaded")
 # In[ ]:
 
 
@@ -99,6 +99,7 @@ dl_model = DLDB(
     categorical_max_vocab=12)
 # TODO: cheating a bit, put back in CV later
 dl_model.compile(fm, fl=fl)
+print("compiled")
 
 
 # In[ ]:
