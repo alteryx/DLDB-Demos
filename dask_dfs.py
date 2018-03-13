@@ -21,64 +21,68 @@ ft.__version__
 # In[ ]:
 
 
-pbar = ProgressBar()
-pbar.register()
+# pbar = ProgressBar()
+# pbar.register()
 
 
-# In[ ]:
+# # In[ ]:
 
 
-path = "partitioned_data/"
-_, dirnames, _ = next(os.walk(path))
-dirnames = [path+d for d in dirnames]
-b = bag.from_sequence(dirnames)
-entity_sets = b.map(utils.load_entityset)
+# path = "partitioned_data/"
+# _, dirnames, _ = next(os.walk(path))
+# dirnames = [path+d for d in dirnames]
+# b = bag.from_sequence(dirnames)
+# entity_sets = b.map(utils.load_entityset)
 
 
-# In[ ]:
+# # In[ ]:
 
 
-cutoff_time = pd.Timestamp('March 1, 2015')
-training_window = ft.Timedelta("60 days")
+# cutoff_time = pd.Timestamp('March 1, 2015')
+# training_window = ft.Timedelta("60 days")
 
 
-# In[ ]:
+# # In[ ]:
 
 
-label_times = entity_sets.map(utils.make_labels,
-                              product_name="Banana",
-                              cutoff_time=cutoff_time,
-                              prediction_window=ft.Timedelta("4 weeks"),
-                              training_window=training_window)
+# label_times = entity_sets.map(utils.make_labels,
+                              # product_name="Banana",
+                              # cutoff_time=cutoff_time,
+                              # prediction_window=ft.Timedelta("4 weeks"),
+                              # training_window=training_window)
 
 
-# In[ ]:
+# # In[ ]:
 
 
-tdfs_results = entity_sets.map(tdfs,
-                               target_entity="users",
-                               cutoffs=label_times,
-                               training_window=training_window,
-                               window_size='14d',
-                               num_windows=5,
-                               verbose=True)
+# tdfs_results = entity_sets.map(tdfs,
+                               # target_entity="users",
+                               # cutoffs=label_times,
+                               # training_window=training_window,
+                               # window_size='14d',
+                               # num_windows=5,
+                               # verbose=True)
 
 
-# In[ ]:
+# # In[ ]:
 
 
-label_times, tdfs_results = bag.compute(label_times, tdfs_results)
+# label_times, tdfs_results = bag.compute(label_times, tdfs_results)
 
-labels = pd.concat(label_times).set_index('user_id').sort_index()['label']
-fm = pd.concat([r[0] for r in tdfs_results]).sort_index()
-fl = tdfs_results[0][1]
-
-
-# In[ ]:
+# labels = pd.concat(label_times).set_index('user_id').sort_index()['label']
+# fm = pd.concat([r[0] for r in tdfs_results]).sort_index()
+# fl = tdfs_results[0][1]
 
 
-fm.to_csv("fm_full_data.csv")
-labels.to_frame().to_csv("label_times_full_data.csv")
+# # In[ ]:
+
+
+#fm.to_csv("fm_full_data.csv")
+#labels.to_frame().to_csv("label_times_full_data.csv")
+fm = pd.read_csv("fm_full_data.csv", index_col=["user_id", "time"], parse_dates=["time"])
+labels = pd.read_csv("label_times_full_data.csv", index_col=["user_id"])["label"]
+es = utils.load_entityset('partitioned_data/part_0/')
+fl = ft.load_features('fl.p', es)
 
 
 # In[ ]:
@@ -119,7 +123,7 @@ for i, train_test_index in enumerate(splitter.split(labels, labels)):
         epochs=100,
         batch_size=32,
         callbacks=[EarlyStopping()])
-    
+
     predictions = dl_model.predict(test_fm)
     cv_score.append(roc_auc_score(test_labels, predictions))
     if i == n_splits - 1:
