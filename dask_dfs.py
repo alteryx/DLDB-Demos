@@ -80,6 +80,7 @@ ft.__version__
 #fm.to_csv("fm_full_data.csv")
 #labels.to_frame().to_csv("label_times_full_data.csv")
 fm = pd.read_csv("fm_full_data.csv", index_col=["user_id", "time"], parse_dates=["time"])
+fm.reset_index('order_time', drop=True, inplace=True)
 labels = pd.read_csv("label_times_full_data.csv", index_col=["user_id"])["label"]
 es = utils.load_entityset('partitioned_data/part_0/')
 fl = ft.load_features('fl.p', es)
@@ -87,16 +88,15 @@ fl = ft.load_features('fl.p', es)
 print("loaded")
 # In[ ]:
 
-
 dl_model = DLDB(
     regression=False,
     classes=[False, True],
-    recurrent_layer_sizes=(32, 32),
-    dense_layer_sizes=(32, 32),
+    recurrent_layer_sizes=(128, 128, 64),
+    dense_layer_sizes=(64, 32),
     dropout_fraction=0.2,
-    recurrent_dropout_fraction=0.1,
-    categorical_embedding_size=20,
-    categorical_max_vocab=12)
+    recurrent_dropout_fraction=0.2,
+    categorical_embedding_size=64,
+    categorical_max_vocab=None)
 # TODO: cheating a bit, put back in CV later
 dl_model.compile(fm, fl=fl)
 print("compiled")
@@ -104,33 +104,27 @@ print("compiled")
 
 # In[ ]:
 
-
 cv_score = []
-n_splits = 3
-test_frac = 0.1
+n_splits = 10
 # Use 10% of data as testing set, but only run 3 rounds of cross-validation
 # (because they take a while)
-splitter = StratifiedKFold(n_splits=int(1/test_frac), shuffle=True)
+splitter = StratifiedKFold(n_splits=n_splits, shuffle=True)
 
 for i, train_test_index in enumerate(splitter.split(labels, labels)):
     train_labels = labels.iloc[train_test_index[0]]
     test_labels = labels.iloc[train_test_index[1]]
-    train_fm = fm.loc[(train_labels.index, slice(None)), :]
-    test_fm = fm.loc[(test_labels.index, slice(None)), :]
+    train_fm = fm.loc[train_labels.index, :]
+    test_fm = fm.loc[test_labels.index, :]
 
     dl_model.fit(
         train_fm, train_labels,
         validation_split=0.1,
-        epochs=100,
-        batch_size=32,
-        callbacks=[EarlyStopping()])
+        epochs=10,
+        batch_size=256)
 
     predictions = dl_model.predict(test_fm)
     cv_score.append(roc_auc_score(test_labels, predictions))
-    if i == n_splits - 1:
-        break
 mean_score = np.mean(cv_score)
 stderr = 2 * (np.std(cv_score) / np.sqrt(n_splits))
 
 print("AUC %.2f +/- %.2f" % (mean_score, stderr))
-
