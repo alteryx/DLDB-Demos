@@ -57,7 +57,9 @@ label_times = entity_sets.map(utils.make_labels,
 
 
 trans_primitives = [Day, Weekend, Weekday, Percentile]
-tdfs_results = entity_sets.map(tdfs,
+def dask_tdfs(entityset, **kwargs):
+    return tdfs(entityset=entityset, **kwargs)
+tdfs_results = entity_sets.map(dask_tdfs,
                                target_entity="users",
                                cutoffs=label_times,
                                trans_primitives=trans_primitives,
