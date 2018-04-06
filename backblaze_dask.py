@@ -9,23 +9,23 @@ import os
 ft.__version__
 
 
-# data_dir = '/Users/bschreck/Google Drive File Stream/My Drive/Feature Labs Shared/EntitySets/entitysets/backblaze_harddrive/data'
-data_dir = '../backblaze_harddrive_data'
+data_dir = '/Users/bschreck/Google Drive File Stream/My Drive/Feature Labs Shared/EntitySets/entitysets/backblaze_harddrive/data'
+#data_dir = '../backblaze_harddrive_data'
 
 df = utils.load_data_as_dataframe(data_dir=data_dir, csv_glob='*.csv')
 print("loaded df")
 
 
-# def upsample(df):
-    # if df['failure'].any():
-        # return df
-    # elif np.random.sample() < 0.01:
-        # return df
-    # else:
-        # return pd.DataFrame()
+def upsample(df):
+    if df['failure'].any():
+        return df
+    elif np.random.sample() < 0.01:
+        return df
+    else:
+        return pd.DataFrame()
 
-# df = df.groupby('serial_number').apply(upsample)
-# print("upsampled df")
+df = df.groupby('serial_number').apply(upsample)
+print("upsampled df")
 es = utils.load_entityset_from_dataframe(df)
 print("loaded es")
 

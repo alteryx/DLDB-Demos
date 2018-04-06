@@ -52,8 +52,8 @@ def create_labels(es, lead, min_training_data):
     label_times = es['SMART_observations'].df.groupby('serial_number').progress_apply(
             lambda df: create_labels_per_instance(df, lead, min_training_data))
     label_times = (label_times.reset_index("serial_number")
-                              .set_index("cutoff")
-                              .set_index("serial_number",
+                              .set_index("serial_number")
+                              .set_index("cutoff",
                                          append=True))['label'].sort_index()
     return label_times.astype(bool)
 
@@ -85,5 +85,6 @@ def cutoff_raw_data(df, cutoffs, training_window):
     cutoff_data = merged[(merged['date'] <= merged['cutoff']) &
                          (merged['date'] >= merged['start'])]
     return (cutoff_data.drop(['cutoff', 'start'], axis=1)
-                       .set_index('date')
-                       .set_index('serial_number', append=True))
+                       .set_index('serial_number')
+                       .set_index('date', append=True)
+                       .sort_index())
