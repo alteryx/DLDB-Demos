@@ -9,11 +9,14 @@ from tqdm import tqdm
 # https://www.backblaze.com/b2/hard-drive-test-data.html
 
 
-def load_data_as_dataframe(data_dir='data', csv_glob='*.csv'):
+def load_data_as_dataframe(data_dir='data', csv_glob='*.csv', nrows=None):
     df = dd.read_csv(os.path.join(data_dir, csv_glob),
                      assume_missing=True)
     df['date'] = dd.to_datetime(df['date'])
-    df = df.compute()
+    if nrows is not None:
+        df = df.head(nrows)
+    else:
+        df = df.compute()
     df['failure'] = df['failure'].map({0: False, 1: True}).astype(bool)
     # smart_9_raw is hard drive operational age in hours. Not possible to be over 10 years old
     df = df[df['smart_9_raw'] < 24*365.25*10]
