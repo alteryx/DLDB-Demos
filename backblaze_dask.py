@@ -71,13 +71,9 @@ for train_test_index in splitter.split(labels, labels):
     train_fm = fm.reset_index('time', drop=True).loc[train_labels.index, :]
     test_fm = fm.reset_index('time', drop=True).loc[test_labels.index, :]
 
-    input_generator = dl_model.compile_generator(train_fm, train_labels,
-                                                 fl=fl,
-                                                 batch_size=128,
-                                                 save_chunk_multiplier=10)
-
-    dl_model.fit_generator(
-        input_generator,
+    dl_model.fit(
+        train_fm, train_labels, fl=fl,
+        batch_size=128
         workers=4,
         use_multiprocessing=True,
         shuffle=False,
