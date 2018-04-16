@@ -43,7 +43,7 @@ min_training_data = pd.Timedelta('5 days')
 # labels = pd.read_csv('backblaze_labels.csv', parse_dates=['cutoff'], index_col=['serial_number', 'cutoff'])['label'].sort_index()
 #fl = ft.load_features('backblaze_high_info_fl.p', es)
 fl = ft.load_features("fl_backblaze_selected.p", es)
-fm = fm[f.get_name() for f in fl]
+fm = fm[[f.get_name() for f in fl]]
 fm.to_csv("backblaze_ftens_selected.csv")
 
 print("loaded labels")
