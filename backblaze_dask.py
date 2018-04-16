@@ -39,9 +39,12 @@ min_training_data = pd.Timedelta('5 days')
 # labels = utils.create_labels(es,
                              # lead,
                              # min_training_data)
-fm = pd.read_csv('backblaze_ftens_high_info.csv', parse_dates=['time'], index_col=['serial_number', 'time']).sort_index()
-labels = pd.read_csv('backblaze_labels.csv', parse_dates=['cutoff'], index_col=['serial_number', 'cutoff'])['label'].sort_index()
-fl = ft.load_features('backblaze_high_info_fl.p', es)
+# fm = pd.read_csv('backblaze_ftens_high_info.csv', parse_dates=['time'], index_col=['serial_number', 'time']).sort_index()
+# labels = pd.read_csv('backblaze_labels.csv', parse_dates=['cutoff'], index_col=['serial_number', 'cutoff'])['label'].sort_index()
+#fl = ft.load_features('backblaze_high_info_fl.p', es)
+fl = ft.load_features("fl_backblaze_selected.p", es)
+fm = fm[f.get_name() for f in fl]
+fm.to_csv("backblaze_ftens_selected.csv")
 
 print("loaded labels")
 
@@ -63,6 +66,26 @@ dl_model = DLDB(
 n_splits=20
 splitter = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=0)
 
+'''
+DFS SCORES:
+[0.6195353582921278,
+ 0.6610391649007141,
+ 0.6698341686568671,
+ 0.749285209727875,
+ 0.781316223216388,
+ 0.7547428436879814,
+ 0.6718692186080931,
+ 0.6596589189007366,
+ 0.7834269568434862,
+ 0.4950553331763598,
+ 0.6798664603585725,
+ 0.7433566551178983,
+ 0.6989976117595613,
+ 0.7803659726193279,
+ 0.7109892697366208,
+ 0.5466657694636969,
+ 0.7256072942601439]
+'''
 cv_score = []
 
 for train_test_index in splitter.split(labels, labels):
@@ -73,11 +96,12 @@ for train_test_index in splitter.split(labels, labels):
 
     dl_model.fit(
         train_fm, train_labels, fl=fl,
-        batch_size=128
-        workers=4,
+        batch_size=128,
+        workers=8,
         use_multiprocessing=True,
         shuffle=False,
         epochs=3)
+    break
 
     predictions = dl_model.predict(test_fm)
     score = roc_auc_score(test_labels, predictions)
