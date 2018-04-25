@@ -101,7 +101,6 @@ for train_test_index in splitter.split(labels, labels):
         use_multiprocessing=True,
         shuffle=False,
         epochs=3)
-    break
 
     predictions = dl_model.predict(test_fm)
     score = roc_auc_score(test_labels, predictions)

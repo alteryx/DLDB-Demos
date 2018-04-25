@@ -8,8 +8,17 @@ from tqdm import tqdm
 # Download from here:
 # https://www.backblaze.com/b2/hard-drive-test-data.html
 
+def downsample(df, frac):
+    if df['failure'].any():
+        return df
+    elif np.random.sample() < frac:
+        return df
+    else:
+        return pd.DataFrame()
 
-def load_data_as_dataframe(data_dir='data', csv_glob='*.csv', nrows=None):
+
+def load_data_as_dataframe(data_dir='data', csv_glob='*.csv',
+                           nrows=None, negative_downsample_frac=0.01):
     df = dd.read_csv(os.path.join(data_dir, csv_glob),
                      assume_missing=True)
     df['date'] = dd.to_datetime(df['date'])
@@ -20,6 +29,9 @@ def load_data_as_dataframe(data_dir='data', csv_glob='*.csv', nrows=None):
     df['failure'] = df['failure'].map({0: False, 1: True}).astype(bool)
     # smart_9_raw is hard drive operational age in hours. Not possible to be over 10 years old
     df = df[df['smart_9_raw'] < 24*365.25*10]
+
+    df = df.groupby('serial_number').apply(
+        lambda x: downsample(x, negative_downsample_frac))
     return df
 
 
@@ -80,9 +92,12 @@ def create_labels_per_instance(df, lead, min_training_data):
 
 
 def cutoff_raw_data(df, cutoffs, training_window):
+    if isinstance(cutoffs, pd.Series):
+        cutoffs = cutoffs.reset_index('cutoff').reset_index('serial_number')[['serial_number', 'cutoff']]
+    else:
+        cutoffs = cutoffs.copy()
     if not isinstance(training_window, pd.Timedelta):
         training_window = pd.Timedelta(training_window)
-    cutoffs = cutoffs.copy()
     cutoffs['start'] = cutoffs['cutoff'] - training_window
     merged = df.merge(cutoffs, on='serial_number', how='left')
     cutoff_data = merged[(merged['date'] <= merged['cutoff']) &
